@@ -19,7 +19,7 @@ env PAPERTRAIL_TOKEN=<your-token> ./papertrail-cli-poc <number-of-lines>
 for better readability:
 ```
 brew install lnav
-env PAPERTRAIL_TOKEN=<your-token> ./papertrail-cli-poc <lines-of-logs> | lnav
+env PAPERTRAIL_TOKEN=<your-token> ./papertrail-cli-poc <number-of-lines> | lnav
 ```
 
 Example output:
