@@ -24,7 +24,7 @@ env PAPERTRAIL_TOKEN=<your-token> ./papertrail-cli-poc <lines-of-logs> | lnav
 
 Example output:
 ```
-jakub.skiba@MBKC9NKCG7QM papertrail-cli % env PAPERTRAIL_TOKEN=hGvlkV8598hH6r3mQOdj ./papertrail-cli 5
+jakub.skiba@MBKC9NKCG7QM papertrail-cli % env PAPERTRAIL_TOKEN=<token> ./papertrail-cli 5
 time="2024-03-26T12:56:03.499714715Z" level=debug msg="Getting plugin config from cluster" plugin_id=netpath-probe revision=2
 time="2024-03-26T12:56:03.509071704Z" level=debug msg="Sending response" instance_id= method=SyncConfiguration plugin_id=netpath-probe request_id=16543187535338838385 request_revision=2 response_newest_revision=2 total-records-to-send=0
 time="2024-03-26T12:56:10.453805475Z" level=debug msg="Not sending plugin health notification because there is no new data available"
@@ -33,6 +33,6 @@ time="2024-03-26T12:56:13.520542234Z" level=debug msg="Sending response" instanc
 ```
 
 ```
-jakub.skiba@MBKC9NKCG7QM papertrail-cli % env PAPERTRAIL_TOKEN=hGvlkV8598hH6r3mQOdj ./papertrail-cli 20 | lnav
+jakub.skiba@MBKC9NKCG7QM papertrail-cli % env PAPERTRAIL_TOKEN=<token> ./papertrail-cli 20 | lnav
 ```
 ![example](example.png)
