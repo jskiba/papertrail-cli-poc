@@ -8,6 +8,7 @@ git clone https://github.com/jskiba/papertrail-cli-poc.git
 ```
 3. Build
 ```
+cd papertrail-cli-poc
 go build .
 ```
 4. Run
