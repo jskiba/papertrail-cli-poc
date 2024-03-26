@@ -13,7 +13,7 @@ go build .
 ```
 4. Run
 ```
-env PAPERTRAIL_TOKEN=<your-token> ./papertrail-cli-poc <lines-of-logs>
+env PAPERTRAIL_TOKEN=<your-token> ./papertrail-cli-poc <number-of-lines>
 ```
 
 for better readability:
