@@ -9,13 +9,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"flag"
 )
 
 func main() {
 	lines := flag.Int("lines", 0, "number of log lines to fetch")
-	url := flag.String("url", "https://api.na-01.cloud.solarwinds.com", "swo api url (default: https://api.na-01.cloud.solarwinds.com)")
+	url := *flag.String("url", "https://api.na-01.cloud.solarwinds.com", "swo api url (default: https://api.na-01.cloud.solarwinds.com)")
 	token := os.Getenv("PAPERTRAIL_TOKEN")
 	if token == "" {
 		slog.Error("PAPERTRAIL_TOKEN env var is empty")
