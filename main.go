@@ -1,58 +1,55 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
-	"flag"
+	"strconv"
 )
 
 func main() {
-	lines := flag.Int("lines", 0, "number of log lines to fetch")
-	urlStr := *flag.String("url", "https://api.na-01.cloud.solarwinds.com", "swo api url (default: https://api.na-01.cloud.solarwinds.com)")
-	token := os.Getenv("PAPERTRAIL_TOKEN")
+	lines := flag.Int("lines", 5, "")
+	endpoint := flag.String("url", "https://api.na-01.dev-ssp.solarwinds.com", "")
+	flag.Parse()
+	token := os.Getenv("SWOKEN")
 	if token == "" {
-		slog.Error("PAPERTRAIL_TOKEN env var is empty")
+		slog.Error("SWOKEN env var is empty")
 		os.Exit(1)
 	}
 
 	client := http.DefaultClient
 
-	urlStr, err := url.JoinPath(urlStr, "v1/logs")
+	urlStr, err := url.JoinPath(*endpoint, "v1/logs")
 	if err != nil {
 		slog.Error("Could not parse endpoint", "error", err)
 		os.Exit(1)
 	}
 
-	endpoint, err := url.Parse(urlStr)
+	parsedUrl, err := url.Parse(urlStr)
 	if err != nil {
 		slog.Error("Could not parse endpoint", "error", err)
 		os.Exit(1)
 	}
 
-	header := http.Header{}
-	header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
-	header.Add("accept", "application/json")
+	params := url.Values{}
+	params.Add("requestPageSize", strconv.Itoa(*lines))
 
-	data, err := json.Marshal(map[string]any{
-		"requestPageSize": lines,
-	})
+	parsedUrl.RawQuery = params.Encode()
+
+	req, err := http.NewRequest("GET", parsedUrl.String(), nil)
 	if err != nil {
-		slog.Error("Could not parse request parameters", "error", err)
 		os.Exit(1)
 	}
 
-	resp, err := client.Do(&http.Request{
-		Method: "GET",
-		URL:    endpoint,
-		Header: header,
-		Body:   io.NopCloser(bytes.NewReader(data)),
-	})
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Add("accept", "application/json")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Could not send https request", "error", err)
 		os.Exit(1)
@@ -70,6 +67,8 @@ func main() {
 		slog.Error("Could not read http response", "error", err)
 		os.Exit(1)
 	}
+
+	fmt.Println(string(content))
 
 	type event struct {
 		Message string `json:"message"`
