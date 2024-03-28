@@ -14,7 +14,7 @@ import (
 
 func main() {
 	lines := flag.Int("lines", 5, "number of log lines that should be fetched")
-	endpoint := flag.String("url", "https://api.na-01.dev-ssp.solarwinds.com", "api url")
+	endpoint := flag.String("url", "https://api.na-01.cloud.solarwinds.com", "api url")
 	flag.Parse()
 	token := os.Getenv("SWOKEN")
 	if token == "" {
