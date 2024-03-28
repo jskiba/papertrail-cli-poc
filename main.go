@@ -23,7 +23,13 @@ func main() {
 
 	client := http.DefaultClient
 
-	endpoint, err := url.JoinPath(urlStr, "v1/logs")
+	urlStr, err := url.JoinPath(urlStr, "v1/logs")
+	if err != nil {
+		slog.Error("Could not parse endpoint", "error", err)
+		os.Exit(1)
+	}
+
+	endpoint, err := url.Parse(urlStr)
 	if err != nil {
 		slog.Error("Could not parse endpoint", "error", err)
 		os.Exit(1)
