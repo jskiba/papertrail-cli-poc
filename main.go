@@ -10,20 +10,12 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"flag"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		slog.Error("Pass <n> lines of logs to fetch")
-		os.Exit(1)
-	}
-
-	lines, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		slog.Error("Could not parse number of lines to integer", "lines-argument", os.Args[1], "error", err)
-		os.Exit(1)
-	}
-
+	lines := flag.Int("lines", 0, "number of log lines to fetch")
+	url := flag.String("url", "https://api.na-01.cloud.solarwinds.com", "swo api url (default: https://api.na-01.cloud.solarwinds.com)")
 	token := os.Getenv("PAPERTRAIL_TOKEN")
 	if token == "" {
 		slog.Error("PAPERTRAIL_TOKEN env var is empty")
@@ -32,7 +24,7 @@ func main() {
 
 	client := http.DefaultClient
 
-	endpoint, err := url.Parse("https://papertrailapp.com:443/api/v1/events/search.json")
+	endpoint, err := url.Parse(url)
 	if err != nil {
 		slog.Error("Could not parse endpoint", "error", err)
 		os.Exit(1)
