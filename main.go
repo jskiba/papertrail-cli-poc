@@ -14,7 +14,7 @@ import (
 
 func main() {
 	lines := flag.Int("lines", 0, "number of log lines to fetch")
-	url := *flag.String("url", "https://api.na-01.cloud.solarwinds.com", "swo api url (default: https://api.na-01.cloud.solarwinds.com)")
+	urlStr := *flag.String("url", "https://api.na-01.cloud.solarwinds.com", "swo api url (default: https://api.na-01.cloud.solarwinds.com)")
 	token := os.Getenv("PAPERTRAIL_TOKEN")
 	if token == "" {
 		slog.Error("PAPERTRAIL_TOKEN env var is empty")
@@ -23,19 +23,18 @@ func main() {
 
 	client := http.DefaultClient
 
-	endpoint, err := url.Parse(url)
+	endpoint, err := url.JoinPath(urlStr, "v1/logs")
 	if err != nil {
 		slog.Error("Could not parse endpoint", "error", err)
 		os.Exit(1)
 	}
 
 	header := http.Header{}
-	header.Add("X-Papertrail-Token", token)
-	header.Add("Content-Type", "application/json")
+	header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	header.Add("accept", "application/json")
 
 	data, err := json.Marshal(map[string]any{
-		"tail":  true,
-		"limit": lines,
+		"requestPageSize": lines,
 	})
 	if err != nil {
 		slog.Error("Could not parse request parameters", "error", err)
