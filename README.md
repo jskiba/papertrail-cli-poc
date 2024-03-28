@@ -12,6 +12,12 @@ cd papertrail-cli-poc
 go build .
 ```
 4. Run
+
+By default `papertrail-cli-poc` sends request to `https://api.na-01.cloud.solarwinds.com` api:
+```
+env SWOKEN=<your-token> ./papertrail-cli-poc -lines <number-of-lines>
+```
+You can change that using `-url` flag:
 ```
 env SWOKEN=<your-token> ./papertrail-cli-poc -lines <number-of-lines> -url <api-url>
 ```
