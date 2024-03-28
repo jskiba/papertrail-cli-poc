@@ -14,7 +14,7 @@ import (
 
 func main() {
 	lines := flag.Int("lines", 5, "number of log lines that should be fetched")
-	endpoint := flag.String("url", "https://api.na-01.cloud.solarwinds.com", "api url")
+	endpoint := flag.String("url", "https://api.na-01.dev-ssp.solarwinds.com", "api url")
 	flag.Parse()
 	token := os.Getenv("SWOKEN")
 	if token == "" {
@@ -68,13 +68,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(content))
-
-	type event struct {
+	type log struct {
 		Message string `json:"message"`
 	}
 	type response struct {
-		Events []event `json:"events"`
+		Logs []log `json:"logs"`
 	}
 
 	var jsonContent response
@@ -84,7 +82,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, e := range jsonContent.Events {
+	for _, e := range jsonContent.Logs {
 		fmt.Println(e.Message)
 	}
 }
