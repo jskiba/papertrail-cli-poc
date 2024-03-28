@@ -14,7 +14,7 @@ import (
 
 func main() {
 	lines := flag.Int("lines", 5, "")
-	endpoint := flag.String("url", "https://api.na-01.dev-ssp.solarwinds.com", "")
+	endpoint := flag.String("url", "", "")
 	flag.Parse()
 	token := os.Getenv("SWOKEN")
 	if token == "" {
