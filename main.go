@@ -14,11 +14,11 @@ import (
 )
 
 type log struct {
-	Time time.Time `json:"time"`
-	Message string `json:"message"`
-	Hostname string `json:"hostname"`
-	Severity string `json:"severity"`
-	Program string `json:"program"`
+	Time     time.Time `json:"time"`
+	Message  string    `json:"message"`
+	Hostname string    `json:"hostname"`
+	Severity string    `json:"severity"`
+	Program  string    `json:"program"`
 }
 
 type pageInfo struct {
@@ -27,14 +27,14 @@ type pageInfo struct {
 }
 
 type response struct {
-	Logs []log `json:"logs"`
+	Logs     []log    `json:"logs"`
 	PageInfo pageInfo `json:"pageInfo"`
 }
 
 func main() {
 	lines := flag.Int("n", 5, "number of log lines that should be fetched")
-	wholeMessage := flag.Bool("whole-response", "print whole response from the api, not only the log messages")
-	endpoint := flag.String("url", "https://api.na-01.dev-ssp.solarwinds.com", "api url")
+	wholeMessage := flag.Bool("--json", false, "print whole response as a json")
+	endpoint := flag.String("url", "https://api.na-01.cloud.solarwinds.com", "api url")
 	flag.Parse()
 	token := os.Getenv("SWOKEN")
 	if token == "" {
@@ -88,7 +88,6 @@ func main() {
 		os.Exit(1)
 	}
 
-
 	var jsonContent response
 	err = json.Unmarshal(content, &jsonContent)
 	if err != nil {
@@ -96,8 +95,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if wholeMessage {
-		fmt.Println(jsonContent)
+	if *wholeMessage {
+		j, err := json.Marshal(jsonContent)
+		if err != nil {
+			slog.Error("Could not marshal response", "error", err)
+			os.Exit(1)
+		}
+	
+		fmt.Println(string(j))
 	} else {
 		for _, e := range jsonContent.Logs {
 			fmt.Println(e.Message)
