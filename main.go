@@ -10,10 +10,30 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 )
 
+type log struct {
+	Time time.Time `json:"time"`
+	Message string `json:"message"`
+	Hostname string `json:"hostname"`
+	Severity string `json:"severity"`
+	Program string `json:"program"`
+}
+
+type pageInfo struct {
+	PrevPage string `json:"prevPage"`
+	NextPage string `json:"nextPage"`
+}
+
+type response struct {
+	Logs []log `json:"logs"`
+	PageInfo pageInfo `json:"pageInfo"`
+}
+
 func main() {
-	lines := flag.Int("lines", 5, "number of log lines that should be fetched")
+	lines := flag.Int("n", 5, "number of log lines that should be fetched")
+	wholeMessage := flag.Bool("whole-response", "print whole response from the api, not only the log messages")
 	endpoint := flag.String("url", "https://api.na-01.dev-ssp.solarwinds.com", "api url")
 	flag.Parse()
 	token := os.Getenv("SWOKEN")
@@ -37,7 +57,7 @@ func main() {
 	}
 
 	params := url.Values{}
-	params.Add("requestPageSize", strconv.Itoa(*lines))
+	params.Add("pageSize", strconv.Itoa(*lines))
 
 	parsedUrl.RawQuery = params.Encode()
 
@@ -68,12 +88,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	type log struct {
-		Message string `json:"message"`
-	}
-	type response struct {
-		Logs []log `json:"logs"`
-	}
 
 	var jsonContent response
 	err = json.Unmarshal(content, &jsonContent)
@@ -82,7 +96,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, e := range jsonContent.Logs {
-		fmt.Println(e.Message)
+	if wholeMessage {
+		fmt.Println(jsonContent)
+	} else {
+		for _, e := range jsonContent.Logs {
+			fmt.Println(e.Message)
+		}
 	}
 }
