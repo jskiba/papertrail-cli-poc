@@ -33,7 +33,7 @@ type response struct {
 
 func main() {
 	lines := flag.Int("n", 5, "number of log lines that should be fetched")
-	wholeMessage := flag.Bool("--json", false, "print whole response as a json")
+	wholeMessage := flag.Bool("json", false, "print whole response as a json")
 	endpoint := flag.String("url", "https://api.na-01.cloud.solarwinds.com", "api url")
 	flag.Parse()
 	token := os.Getenv("SWOKEN")
