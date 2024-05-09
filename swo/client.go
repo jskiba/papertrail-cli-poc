@@ -19,14 +19,15 @@ import (
 type Client struct {
 	opts       *Options
 	httpClient http.Client
+	output     *os.File
 }
 
 type Log struct {
-	Time     time.Time `json:"time"`
-	Message  string    `json:"message"`
-	Hostname string    `json:"hostname"`
-	Severity string    `json:"severity"`
-	Program  string    `json:"program"`
+	Time     string `json:"time"`
+	Message  string `json:"message"`
+	Hostname string `json:"hostname"`
+	Severity string `json:"severity"`
+	Program  string `json:"program"`
 }
 
 type PageInfo struct {
@@ -43,6 +44,7 @@ func NewClient(opts *Options) (*Client, error) {
 	return &Client{
 		httpClient: *http.DefaultClient,
 		opts:       opts,
+		output:     os.Stdout,
 	}, nil
 }
 
@@ -97,19 +99,24 @@ func (c *Client) prepareRequest(ctx context.Context) (*http.Request, error) {
 	return request, nil
 }
 
-func (c *Client) printResult(output *os.File, logs *LogsData) error {
+func (c *Client) printResult(logs *LogsData) error {
 	if c.opts.json {
 		jsonFormat, err := json.Marshal(logs)
 		if err != nil {
 			return err
 		}
 
-		fmt.Fprintln(output, jsonFormat)
+		fmt.Fprintln(c.output, jsonFormat)
 		return nil
 	}
 
 	for _, l := range logs.Logs {
-		fmt.Fprintln(output, l.Message)
+		t, err := time.Parse("Jan 02 15:04:05", l.Time)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(c.output, "%s %s %s %s", t.String(), l.Hostname, l.Program, l.Message)
 	}
 
 	return nil
@@ -148,5 +155,5 @@ func (c *Client) Run(ctx context.Context) error {
 		return fmt.Errorf("error while unmarshaling http response body from SWO: %w", err)
 	}
 
-	return c.printResult(os.Stdout, &logs)
+	return c.printResult(&logs)
 }
