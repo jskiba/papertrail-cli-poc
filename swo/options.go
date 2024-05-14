@@ -204,7 +204,7 @@ func parseTime(input string) (string, error) {
 
 		location = l
 
-		input = strings.ReplaceAll(input, " UTC", "")
+		input = strings.ReplaceAll(input, "UTC", "")
 	}
 
 	for _, layout := range timeLayouts {
