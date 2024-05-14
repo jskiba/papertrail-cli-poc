@@ -28,36 +28,51 @@ func TestNewOptions(t *testing.T) {
 	}{
 		{
 			name:  "default flag values",
-			flags: []string{},
+			flags: []string{"--configfile", filepath.Join(os.TempDir(), "config-file.yaml")},
 			expected: Options{
 				args:       []string{},
 				count:      defaultCount,
-				configFile: defaultConfigFile,
 				ApiUrl:     defaultApiUrl,
+				Token:      "123456",
+				configFile: filepath.Join(os.TempDir(), "config-file.yaml"),
+			},
+			action: func() {
+				yamlStr := "token: 123456"
+				createConfigFile(t, configFile, yamlStr)
 			},
 		},
 		{
 			name:  "many flags",
-			flags: []string{"--count", "5", "--group", "groupValue", "--system", "systemValue", "--color", "program"},
+			flags: []string{"--configfile", filepath.Join(os.TempDir(), "config-file.yaml"), "--count", "5", "--group", "groupValue", "--system", "systemValue", "--color", "program"},
 			expected: Options{
 				args:       []string{},
 				count:      5,
 				group:      "groupValue",
 				system:     "systemValue",
 				color:      program,
-				configFile: defaultConfigFile,
+				configFile: filepath.Join(os.TempDir(), "config-file.yaml"),
 				ApiUrl:     defaultApiUrl,
+				Token:      "123456",
+			},
+			action: func() {
+				yamlStr := "token: 123456"
+				createConfigFile(t, configFile, yamlStr)
 			},
 		},
 		{
 			name:  "many flags and args",
-			flags: []string{"--count", "5", "--group", "groupValue", "one", "two", "three"},
+			flags: []string{"--configfile", filepath.Join(os.TempDir(), "config-file.yaml"), "--count", "5", "--group", "groupValue", "one", "two", "three"},
 			expected: Options{
 				args:       []string{"one", "two", "three"},
 				count:      5,
 				group:      "groupValue",
-				configFile: defaultConfigFile,
+				configFile: filepath.Join(os.TempDir(), "config-file.yaml"),
 				ApiUrl:     defaultApiUrl,
+				Token:      "123456",
+			},
+			action: func() {
+				yamlStr := "token: 123456"
+				createConfigFile(t, configFile, yamlStr)
 			},
 		},
 		{
@@ -115,30 +130,48 @@ api-url: https://api.solarwinds.com
 			},
 		},
 		{
-			name:  "parse human readable min time",
-			flags: []string{"--min-time", "5 seconds ago"},
+			name:  "missing token",
+			flags: []string{},
 			expected: Options{
 				args:       []string{},
 				count:      defaultCount,
 				configFile: defaultConfigFile,
 				ApiUrl:     defaultApiUrl,
+				Token:      "tokenFromEnvVar",
+			},
+			expectedError: errMissingToken,
+		},
+		{
+			name:  "parse human readable min time",
+			flags: []string{"--min-time", "5 seconds ago", "--configfile", filepath.Join(os.TempDir(), "config-file.yaml")},
+			expected: Options{
+				args:       []string{},
+				count:      defaultCount,
+				configFile: filepath.Join(os.TempDir(), "config-file.yaml"),
+				ApiUrl:     defaultApiUrl,
 				minTime:    "2000-01-01T10:00:25Z",
+				Token:      "123456",
 			},
 			action: func() {
+				yamlStr := "token: 123456"
+				createConfigFile(t, configFile, yamlStr)
 				now = fixedTime
 			},
 		},
 		{
 			name:  "parse human readable max time",
-			flags: []string{"--max-time", "in 5 seconds"},
+			flags: []string{"--max-time", "in 5 seconds", "--configfile", filepath.Join(os.TempDir(), "config-file.yaml")},
 			expected: Options{
 				args:       []string{},
 				count:      defaultCount,
-				configFile: defaultConfigFile,
+				configFile: filepath.Join(os.TempDir(), "config-file.yaml"),
 				ApiUrl:     defaultApiUrl,
 				maxTime:    "2000-01-01T10:00:35Z",
+				Token:      "123456",
 			},
 			action: func() {
+				yamlStr := "token: 123456"
+				createConfigFile(t, configFile, yamlStr)
 				now = fixedTime
 			},
 		},
@@ -160,7 +193,7 @@ api-url: https://api.solarwinds.com
 			}
 
 			opts, err := NewOptions(tc.flags)
-			require.True(t, errors.Is(err, tc.expectedError))
+			require.True(t, errors.Is(err, tc.expectedError), err)
 			if tc.expectedError != nil {
 				return
 			}

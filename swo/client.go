@@ -157,7 +157,7 @@ func (c *Client) printResult(logs *LogsData) error {
 
 func (c *Client) Run(ctx context.Context) error {
 	if c.opts.version {
-		fmt.Println(version.Version)
+		fmt.Fprintln(c.output, version.Version)
 		return nil
 	}
 

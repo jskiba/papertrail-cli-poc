@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jskiba/papertrail-cli-poc/version"
 	"github.com/stretchr/testify/require"
 )
 
@@ -318,6 +319,36 @@ func TestPrintResultJSON(t *testing.T) {
 
 	err = w.Close()
 	require.NoError(t, err)
+
+	wg.Wait()
+}
+
+func TestRunVersion(t *testing.T) {
+	createConfigFile(t, configFile, "token: 1234567")
+	opts, err := NewOptions([]string{"--configfile", configFile, "--version"})
+	require.NoError(t, err)
+
+	client, err := NewClient(opts)
+	require.NoError(t, err)
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	client.output = w
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		output, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.Equal(t, version.Version+"\n", string(output))
+	}()
+
+	err = client.Run(context.Background())
+	require.NoError(t, err)
+
+	w.Close()
 
 	wg.Wait()
 }

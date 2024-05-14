@@ -25,7 +25,15 @@ const (
 	defaultApiUrl     = "https://api.na-01.cloud.solarwinds.com"
 )
 
-var timeLayouts = []string{
+var (
+	now = time.Now()
+
+	errColorFlag   = errors.New("unknown value of the color flag")
+	errMinTimeFlag = errors.New("failed to parse --min-time flag")
+	errMaxTimeFlag = errors.New("failed to parse --max-time flag")
+	errMissingToken = errors.New("failed to find token")
+
+	timeLayouts = []string{
 	time.Layout,
 	time.ANSIC,
 	time.UnixDate,
@@ -45,6 +53,7 @@ var timeLayouts = []string{
 	time.DateOnly,
 	time.TimeOnly,
 }
+)
 
 type Options struct {
 	fs         *flag.FlagSet
@@ -65,13 +74,6 @@ type Options struct {
 	Token  string `yaml:"token"`
 }
 
-var (
-	now = time.Now()
-
-	errColorFlag   = errors.New("unknown value of the color flag")
-	errMinTimeFlag = errors.New("failed to parse --min-time flag")
-	errMaxTimeFlag = errors.New("failed to parse --max-time flag")
-)
 
 func NewOptions(args []string) (*Options, error) {
 	opts := &Options{
@@ -122,7 +124,6 @@ func NewOptions(args []string) (*Options, error) {
 	opts.fs.StringVar(&maxTime, "max-time", "", "")
 	opts.fs.BoolVar(&opts.json, "j", false, "")
 	opts.fs.BoolVar(&opts.json, "json", false, "")
-	opts.fs.BoolVar(&opts.forceColor, "force-color", false, "")
 	opts.fs.BoolVar(&opts.version, "V", false, "")
 	opts.fs.BoolVar(&opts.version, "version", false, "")
 
@@ -181,6 +182,10 @@ func NewOptions(args []string) (*Options, error) {
 
 	if token := os.Getenv("SWOKEN"); token != "" {
 		opts.Token = token
+	}
+
+	if opts.Token == "" && !opts.version {
+		return nil, errMissingToken
 	}
 
 	return opts, nil
