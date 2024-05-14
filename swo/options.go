@@ -95,7 +95,7 @@ func NewOptions(args []string) (*Options, error) {
 		fmt.Println()
 
 		fmt.Println("  Usage:")
-		fmt.Println("    swo-cli [--min-time time] [--max-time time] [-g group] [-s system]")
+		fmt.Println("    swo-cli [--min-time time] [--max-time time] [-g group-id] [-s system]")
 		fmt.Println("      [-c swo-cli.yml] [-j] [--color attributes] [--] [query]")
 
 		fmt.Println()
@@ -105,8 +105,8 @@ func NewOptions(args []string) (*Options, error) {
 		fmt.Println("  swo-cli 1.2.3 Failure")
 		fmt.Println(`  swo-cli -s ns1 "connection refused"`)
 		fmt.Println(`  swo-cli "(www OR db) (nginx OR pgsql) -accepted"`)
-		fmt.Println(`  swo-cli -g Production --color all "(nginx OR pgsql) -accepted"`)
-		fmt.Println(`  swo-cli --min-time 'yesterday at noon' --max-time 'today at 4am' -g Production`)
+		fmt.Println(`  swo-cli -g <SWO_GROUP_ID> --color all "(nginx OR pgsql) -accepted"`)
+		fmt.Println(`  swo-cli --min-time 'yesterday at noon' --max-time 'today at 4am' -g <SWO_GROUP_ID>`)
 		fmt.Println("  swo-cli -- -redis")
 	}
 
