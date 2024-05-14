@@ -137,7 +137,6 @@ api-url: https://api.solarwinds.com
 				count:      defaultCount,
 				configFile: defaultConfigFile,
 				ApiUrl:     defaultApiUrl,
-				Token:      "tokenFromEnvVar",
 			},
 			expectedError: errMissingToken,
 		},

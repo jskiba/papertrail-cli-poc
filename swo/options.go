@@ -20,7 +20,7 @@ const (
 	all     = "all"
 	off     = "off"
 
-	defaultCount      = 10
+	defaultCount      = 100
 	defaultConfigFile = "~/.swo-cli.yaml"
 	defaultApiUrl     = "https://api.na-01.cloud.solarwinds.com"
 )
@@ -82,6 +82,7 @@ func NewOptions(args []string) (*Options, error) {
 	opts.fs.Usage = func() {
 		fmt.Printf("%36s\n", "swo-cli - command-line search for SolarWinds Observability log management service")
 		fmt.Printf("    %2s, %16s %70s\n", "-h", "--help", "Show usage")
+		fmt.Printf("    %2s  %16s %70s\n", "", "--count NUMBER", "Number of log entries to search (100)")
 		fmt.Printf("    %2s  %16s %70s\n", "", "--min-time MIN", "Earliest time to search from")
 		fmt.Printf("    %2s  %16s %70s\n", "", "--max-time MAX", "Latest time to search from")
 		fmt.Printf("    %2s, %16s %70s\n", "-c", "--configfile", "Path to config (~/.swo-cli.yaml)")

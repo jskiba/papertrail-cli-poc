@@ -80,7 +80,7 @@ func TestPrepareRequest(t *testing.T) {
 			name:  "default request",
 			flags: []string{"--configfile", configFile},
 			expectedValues: map[string][]string{
-				"pageSize": {"10"},
+				"pageSize": {"100"},
 			},
 		},
 		{
@@ -97,7 +97,7 @@ func TestPrepareRequest(t *testing.T) {
 			name:  "system flag",
 			flags: []string{"--configfile", configFile, "--system", "systemValue"},
 			expectedValues: map[string][]string{
-				"pageSize": {"10"},
+				"pageSize": {"100"},
 				"filter":   {"host:systemValue"},
 			},
 		},
@@ -105,7 +105,7 @@ func TestPrepareRequest(t *testing.T) {
 			name:  "system flag with filter",
 			flags: []string{"--configfile", configFile, "--system", "systemValue", "--", "\"access denied\"", "1.2.3.4", "-sshd"},
 			expectedValues: map[string][]string{
-				"pageSize": {"10"},
+				"pageSize": {"100"},
 				"filter": func() []string {
 					escaped := url.PathEscape("filter=host:systemValue \"access denied\" 1.2.3.4 -sshd")
 					values, err := url.ParseQuery(escaped)
