@@ -16,7 +16,8 @@ additional colorization options.
 Install [Go]
 
     $ go install github.com/solarwinds/swo-cli@latest
-    $ echo "token: 123456789012345678901234567890ab\napi-url: https://api.na-01.cloud.solarwinds.com" > ~/.swo-cli.yml
+    $ echo "token: 123456789012345678901234567890ab" > ~/.swo-cli.yml
+    $ echo "api-url: https://api.na-01.cloud.solarwinds.com" >> ~/.swo-cli.yml
     $ swo-cli
 
 Retrieve the full-access token from SolarWinds Observability.
