@@ -182,6 +182,10 @@ func (c *Client) Run(ctx context.Context) error {
 		return fmt.Errorf("error while reading http response body from SWO: %w", err)
 	}
 
+	if !(response.StatusCode >= 200 && response.StatusCode < 300) {
+		return fmt.Errorf("received %d status code, response body: %s", response.StatusCode, string(content))
+	}
+
 	if len(content) == 0 {
 		return nil
 	}
