@@ -3,6 +3,8 @@
 Small standalone command line tool to retrieve and search recent app
 server log and system syslog messages from [Solarwinds].
 
+### This is v1 of the swo-cli and it DOES NOT support tailing of the logs.
+
 Supports optional Boolean search queries. Example:
 
     $ swo-cli "(www OR db) (nginx OR pgsql) -accepted"
