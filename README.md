@@ -43,15 +43,15 @@ Retrieve token from SolarWinds Observability page (`Settings` -> `API Tokens` ->
 
     $ swo --help
     swo-cli - command-line search for SolarWinds Observability log management service
-        -h,          --help                                                             Show usage
-             --min-time MIN                                           Earliest time to search from
-             --max-time MAX                                             Latest time to search from
-        -c,    --configfile                                       Path to config (~/.swo-cli.yaml)
-        -g,   --group GROUP                                                     Group ID to search
-        -s, --system SYSTEM                                                       System to search
-        -j,          --json                                             Output raw JSON data (off)
+        -h,           --help                                                             Show usage
+              --min-time MIN                                           Earliest time to search from
+              --max-time MAX                                             Latest time to search from
+        -c,     --configfile                                       Path to config (~/.swo-cli.yaml)
+        -g, --group GROUP_ID                                                     Group ID to search
+        -s,  --system SYSTEM                                                       System to search
+        -j,           --json                                             Output raw JSON data (off)
             --color [program|system|all|off]
-        -V,       --version                                           Display the version and exit
+        -V,        --version                                           Display the version and exit
     
       Usage:
         swo-cli [--min-time time] [--max-time time] [-g group] [-s system]
@@ -190,7 +190,7 @@ Alternatively, use shell aliases with different `-c` paths. For example:
 ### Build
 
 1. Bump `Version` in `version/version.go`
-2. Build the new gem: `$ rake build`
+2. Build the swo-cli: `$ go build .`
 
 ### Install & Test
 
@@ -209,6 +209,7 @@ Alternatively, use shell aliases with different `-c` paths. For example:
 Testing:
 
 Run all the tests with `go test -v -count=1 ./...`
+Run go linter with `make ci-lint`
 
 Bug report:
 

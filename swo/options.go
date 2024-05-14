@@ -81,15 +81,15 @@ func NewOptions(args []string) (*Options, error) {
 
 	opts.fs.Usage = func() {
 		fmt.Printf("%36s\n", "swo-cli - command-line search for SolarWinds Observability log management service")
-		fmt.Printf("    %2s, %15s %70s\n", "-h", "--help", "Show usage")
-		fmt.Printf("    %2s  %15s %70s\n", "", "--min-time MIN", "Earliest time to search from")
-		fmt.Printf("    %2s  %15s %70s\n", "", "--max-time MAX", "Latest time to search from")
-		fmt.Printf("    %2s, %15s %70s\n", "-c", "--configfile", "Path to config (~/.swo-cli.yaml)")
-		fmt.Printf("    %2s, %15s %70s\n", "-g", "--group GROUP", "Group ID to search")
-		fmt.Printf("    %2s, %15s %70s\n", "-s", "--system SYSTEM", "System to search")
-		fmt.Printf("    %2s, %15s %70s\n", "-j", "--json", "Output raw JSON data (off)")
-		fmt.Printf("    %2s  %15s %70s\n", "", "--color [program|system|all|off]", "")
-		fmt.Printf("    %2s, %15s %70s\n", "-V", "--version", "Display the version and exit")
+		fmt.Printf("    %2s, %16s %70s\n", "-h", "--help", "Show usage")
+		fmt.Printf("    %2s  %16s %70s\n", "", "--min-time MIN", "Earliest time to search from")
+		fmt.Printf("    %2s  %16s %70s\n", "", "--max-time MAX", "Latest time to search from")
+		fmt.Printf("    %2s, %16s %70s\n", "-c", "--configfile", "Path to config (~/.swo-cli.yaml)")
+		fmt.Printf("    %2s, %16s %70s\n", "-g", "--group GROUP_ID", "Group ID to search")
+		fmt.Printf("    %2s, %16s %70s\n", "-s", "--system SYSTEM", "System to search")
+		fmt.Printf("    %2s, %16s %70s\n", "-j", "--json", "Output raw JSON data (off)")
+		fmt.Printf("    %2s  %16s %70s\n", "", "--color [program|system|all|off]", "")
+		fmt.Printf("    %2s, %16s %70s\n", "-V", "--version", "Display the version and exit")
 
 		fmt.Println()
 
