@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	opts, err := swo.NewOptions(os.Args)
+	opts, err := swo.NewOptions(os.Args[1:])
 	if err != nil {
 		slog.Error("Could not prepare options", "error", err)
 		os.Exit(1)

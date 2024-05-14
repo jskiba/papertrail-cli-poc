@@ -5,7 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/user"
 	"time"
+	"strings"
+	"path/filepath"
 
 	"github.com/olebedev/when"
 	"gopkg.in/yaml.v3"
@@ -22,8 +25,30 @@ const (
 	defaultApiUrl     = "https://api.na-01.cloud.solarwinds.com"
 )
 
+var timeLayouts = []string{
+	time.Layout,
+	time.ANSIC,
+	time.UnixDate,
+	time.RubyDate,
+	time.RFC822,
+	time.RFC822Z,
+	time.RFC850,
+	time.RFC1123,
+	time.RFC1123Z,
+	time.RFC3339,
+	time.RFC3339Nano,
+	time.Kitchen,
+	time.Stamp,
+	time.StampMilli,
+	time.StampNano,
+	time.DateTime,
+	time.DateOnly,
+	time.TimeOnly,
+}
+
 type Options struct {
 	fs         *flag.FlagSet
+
 	args       []string
 	count      int
 	configFile string
@@ -51,6 +76,36 @@ var (
 func NewOptions(args []string) (*Options, error) {
 	opts := &Options{
 		fs: flag.NewFlagSet(os.Args[0], flag.ContinueOnError),
+	}
+
+	opts.fs.Usage = func() {
+		fmt.Printf("%36s\n", "swo-cli - command-line search for SolarWinds Observability log management service")
+		fmt.Printf("    %2s, %15s %70s\n", "-h", "--help", "Show usage")
+		fmt.Printf("    %2s  %15s %70s\n", "", "--min-time MIN", "Earliest time to search from")
+		fmt.Printf("    %2s  %15s %70s\n", "", "--max-time MAX", "Latest time to search from")
+		fmt.Printf("    %2s,  %15s %70s\n", "-c", "--configfile", "Path to config (~/.swo-cli.yaml)")
+		fmt.Printf("    %2s, %15s %70s\n", "-g", "--group GROUP", "Group ID to search")
+		fmt.Printf("    %2s, %15s %70s\n", "-s", "--system SYSTEM", "System to search")
+		fmt.Printf("    %2s, %15s %70s\n", "-j", "--json", "Output raw JSON data (off)")
+		fmt.Printf("    %2s  %15s %70s\n", "", "--color [program|system|all|off]", "")
+		fmt.Printf("    %2s, %15s %70s\n", "-V", "--version", "Display the version and exit")
+
+		fmt.Println()
+
+		fmt.Println("  Usage:")
+		fmt.Println("    swo-cli [--min-time time] [--max-time time] [-g group] [-s system]")
+		fmt.Println("      [-c swo-cli.yml] [-j] [--color attributes] [--] [query]")
+
+		fmt.Println()
+
+		fmt.Println("  Examples:")
+		fmt.Println("  swo-cli something")
+		fmt.Println("  swo-cli 1.2.3 Failure")
+		fmt.Println(`  swo-cli -s ns1 "connection refused"`)
+		fmt.Println(`  swo-cli "(www OR db) (nginx OR pgsql) -accepted"`)
+		fmt.Println(`  swo-cli -g Production --color all "(nginx OR pgsql) -accepted"`)
+		fmt.Println(`  swo-cli --min-time 'yesterday at noon' --max-time 'today at 4am' -g Production`)
+		fmt.Println("  swo-cli -- -redis")
 	}
 
 	var minTime, maxTime string
@@ -82,27 +137,45 @@ func NewOptions(args []string) (*Options, error) {
 	}
 
 	if minTime != "" {
-		result, err := when.EN.Parse(minTime, now)
-		if err != nil || result == nil {
+		result, err := parseTime(minTime)
+		if err != nil {
 			return nil, errors.Join(errMinTimeFlag, err)
 		}
 
-		opts.minTime = result.Time.Format(time.RFC3339)
+		opts.minTime = result
 	}
 
 	if maxTime != "" {
-		result, err := when.EN.Parse(maxTime, now)
-		if err != nil || result == nil {
+		result, err := parseTime(maxTime)
+		if err != nil {
 			return nil, errors.Join(errMaxTimeFlag, err)
 		}
 
-		opts.maxTime = result.Time.Format(time.RFC3339)
+		opts.maxTime = result
 	}
 
-	if content, err := os.ReadFile(opts.configFile); err == nil {
+	configPath := opts.configFile
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	localConfig := filepath.Join(cwd, ".swo-cli.yaml")
+	if _, err := os.Stat(localConfig); err == nil {
+		configPath = localConfig
+	} else if strings.HasPrefix(opts.configFile, "~/") {
+		usr, err := user.Current()
+		if err != nil {
+			return nil, fmt.Errorf("error while resolving current user to read configuration file: %w", err)
+		}
+
+		configPath = filepath.Join(usr.HomeDir, opts.configFile[2:])
+	}
+
+	if content, err := os.ReadFile(configPath); err == nil {
 		err = yaml.Unmarshal(content, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error while unmarshaling %s config file: %w", opts.configFile, err)
+			return nil, fmt.Errorf("error while unmarshaling %s config file: %w", configPath, err)
 		}
 	}
 
@@ -111,4 +184,36 @@ func NewOptions(args []string) (*Options, error) {
 	}
 
 	return opts, nil
+}
+
+func parseTime(input string) (string, error) {
+	location := time.Local
+	if strings.HasSuffix(input, "UTC") {
+		l, err := time.LoadLocation("UTC")
+		if err != nil {
+			return "", err
+		}
+
+		location = l
+
+		input = strings.ReplaceAll(input, " UTC", "")
+	}
+
+	for _, layout := range timeLayouts {
+		result, err := time.Parse(layout, input)
+		if err == nil {
+			result = result.In(location)
+			return result.Format(time.RFC3339), nil
+		}
+	}
+
+	result, err := when.EN.Parse(input, now)
+	if err != nil {
+		return "", err
+	}
+	if result == nil {
+		return "", errors.New("failed to parse time")
+	}
+
+	return result.Time.In(location).Format(time.RFC3339), nil
 }

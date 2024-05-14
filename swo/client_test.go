@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
+	"sync"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,17 +18,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPrepareRequest(t *testing.T) {
-	configFile := filepath.Join(os.TempDir(), "config-file.yaml")
-	f, err := os.Create(configFile)
+var (
+	configFile = filepath.Join(os.TempDir(), "config-file.yaml")
+	logsData   = LogsData{
+		Logs: []Log{
+			{
+				Time:     time.Now(),
+				Message:  "messageOne",
+				Hostname: "hostnameOne",
+				Severity: "severityOne",
+				Program:  "programOne",
+			},
+			{
+				Time:     time.Now(),
+				Message:  "messageTwo",
+				Hostname: "hostnameTwo",
+				Severity: "severityTwo",
+				Program:  "programTwo",
+			},
+		},
+		PageInfo: PageInfo{PrevPage: "prevPageValue"},
+	}
+)
+
+func createConfigFile(t *testing.T, filename, content string) {
+	_ = os.Remove(filename)
+	f, err := os.Create(filename)
 	require.NoError(t, err, "creating a temporary file should not fail")
-	defer os.Remove(configFile)
+
+	n, err := f.Write([]byte(content))
+	require.Equal(t, n, len(content))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		os.Remove(filename)
+	})
+}
+
+func TestPrepareRequest(t *testing.T) {
+	location, err := time.LoadLocation("GMT")
+	require.NoError(t, err)
+
+	time.Local = location
 
 	token := "1234567"
 	yamlStr := fmt.Sprintf("token: %s", token)
-	n, err := f.Write([]byte(yamlStr))
-	require.Equal(t, n, len(yamlStr))
-	require.NoError(t, err)
+	createConfigFile(t, configFile, yamlStr)
 
 	fixedTime, err := time.Parse(time.DateTime, "2000-01-01 10:00:30")
 	require.NoError(t, err)
@@ -108,54 +145,42 @@ func TestPrepareRequest(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	configFile := filepath.Join(os.TempDir(), "config-file.yaml")
-	f, err := os.Create(configFile)
-	require.NoError(t, err, "creating a temporary file should not fail")
-	defer os.Remove(configFile)
+	location, err := time.LoadLocation("GMT")
+	require.NoError(t, err)
 
-	logsData := LogsData{
-		Logs: []Log{
-			{
-				Time:     "timeValueOne",
-				Message:  "messageOne",
-				Hostname: "hostnameOne",
-				Severity: "severityOne",
-				Program:  "programOne",
-			},
-			{
-				Time:     "timeValueTwo",
-				Message:  "messageTwo",
-				Hostname: "hostnameTwo",
-				Severity: "severityTwo",
-				Program:  "programTwo",
-			},
-		},
-		PageInfo: PageInfo{PrevPage: "prevPageValue"},
-	}
+	time.Local = location
 
-	handler := func(responseWriter http.ResponseWriter, _ *http.Request) {
+	handler := func(w http.ResponseWriter, _ *http.Request) {
 		data, err := json.Marshal(logsData)
 		require.NoError(t, err)
 
-		_, err = responseWriter.Write(data)
+		w.Header().Set("Content-Type", "application/json")
+
+		_, err = w.Write(data)
 		require.NoError(t, err)
 	}
-	server := httptest.NewServer(http.HandlerFunc(handler))
-	defer server.Close()
+
+	wg := sync.WaitGroup{}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	server := &http.Server{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		http.HandleFunc("/v1/logs", handler)
+		err = server.Serve(listener)
+	}()
 
 	token := "1234567"
 	yamlStr := fmt.Sprintf(`
 token: %s
 api-url: %s
-`, token, server.URL)
-	n, err := f.Write([]byte(yamlStr))
-	require.Equal(t, n, len(yamlStr))
-	require.NoError(t, err)
-
-	originalStdout := os.Stdout
-	defer func() {
-		os.Stdout = originalStdout
-	}()
+`, token, fmt.Sprintf("http://%s", listener.Addr().String()))
+	createConfigFile(t, configFile, yamlStr)
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
@@ -167,17 +192,132 @@ api-url: %s
 	require.NoError(t, err)
 	client.output = w
 
+	outputComapreDone := make(chan struct{})
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+		defer close(outputComapreDone)
+
 		output, err := io.ReadAll(r)
 		require.NoError(t, err)
+
+		data, err := json.Marshal(logsData)
 		require.NoError(t, err)
-		require.Equal(t, logsData, output)
+		require.Equal(t, string(data), string(output[:len(output)-1])) // last char is a new line character
+	}()
+
+	go func() {
+		<-outputComapreDone
+		server.Shutdown(context.Background())
 	}()
 
 	err = client.Run(context.Background())
 	require.NoError(t, err)
+
+	w.Close()
+
+	wg.Wait()
 }
 
-func TestPrintResult(t *testing.T) {
+func TestPrintResultStandard(t *testing.T) {
+	location, err := time.LoadLocation("GMT")
+	require.NoError(t, err)
 
+	time.Local = location
+
+	createConfigFile(t, configFile, "token: 1234567")
+	opts, err := NewOptions([]string{"--configfile", configFile})
+	require.NoError(t, err)
+
+	client, err := NewClient(opts)
+	require.NoError(t, err)
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	client.output = w
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		output, err := io.ReadAll(r)
+		require.NoError(t, err)
+
+		expectStr := fmt.Sprintf(`%s hostnameTwo programTwo messageTwo
+%s hostnameOne programOne messageOne
+`,		logsData.Logs[1].Time.Format("Jan 02 15:04:05"), logsData.Logs[0].Time.Format("Jan 02 15:04:05")) // SWO returns fresh logs as first in the logs list
+		require.Equal(t, expectStr, string(output))
+	}()
+
+	client.printResult(&logsData)
+
+	err = w.Close()
+	require.NoError(t, err)
+
+	wg.Wait()
+}
+
+func TestPrintResultJSON(t *testing.T) {
+	location, err := time.LoadLocation("GMT")
+	require.NoError(t, err)
+
+	time.Local = location
+
+	createConfigFile(t, configFile, "token: 1234567")
+	opts, err := NewOptions([]string{"--configfile", configFile, "--json"})
+	require.NoError(t, err)
+
+	client, err := NewClient(opts)
+	require.NoError(t, err)
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	client.output = w
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		output, err := io.ReadAll(r)
+		require.NoError(t, err)
+
+		expectedStr := `
+		{
+			"logs":[
+				{
+					"time":"%s",
+					"message":"messageOne",
+					"hostname":"hostnameOne",
+					"severity":"severityOne",
+					"program":"programOne"
+				},
+				{
+					"time":"%s",
+					"message":"messageTwo",
+					"hostname":"hostnameTwo",
+					"severity":"severityTwo",
+					"program":"programTwo"
+				}
+			],
+			"pageInfo":{
+				"prevPage":"prevPageValue",
+				"nextPage":""
+			}
+		}
+		`
+		trimmed := strings.TrimSpace(fmt.Sprintf(expectedStr, logsData.Logs[0].Time.Format(time.RFC3339Nano), logsData.Logs[1].Time.Format(time.RFC3339Nano)))
+		trimmed = strings.ReplaceAll(trimmed, "\t", "")
+		trimmed = strings.ReplaceAll(trimmed, "\n", "")
+		require.Equal(t, trimmed, string(output[:len(output)-1])) // last char is a new line character
+	}()
+
+	client.printResult(&logsData)
+
+	err = w.Close()
+	require.NoError(t, err)
+
+	wg.Wait()
 }

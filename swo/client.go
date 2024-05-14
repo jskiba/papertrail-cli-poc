@@ -8,13 +8,25 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"math/rand/v2"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/jskiba/papertrail-cli-poc/version"
 )
+
+type ColorStrFunc func(format string, a ...interface{}) string
+
+var colors = []ColorStrFunc{
+	color.CyanString,
+	color.YellowString,
+	color.GreenString,
+	color.MagentaString,
+	color.RedString,
+}
 
 type Client struct {
 	opts       *Options
@@ -23,7 +35,7 @@ type Client struct {
 }
 
 type Log struct {
-	Time     string `json:"time"`
+	Time     time.Time `json:"time"`
 	Message  string `json:"message"`
 	Hostname string `json:"hostname"`
 	Severity string `json:"severity"`
@@ -106,17 +118,38 @@ func (c *Client) printResult(logs *LogsData) error {
 			return err
 		}
 
-		fmt.Fprintln(c.output, jsonFormat)
-		return nil
+		_, err = fmt.Fprintln(c.output, string(jsonFormat))
+		return err
 	}
 
-	for _, l := range logs.Logs {
-		t, err := time.Parse("Jan 02 15:04:05", l.Time)
-		if err != nil {
-			return err
+	hostnameColorIdx := -1
+	programColorIdx := -1
+	switch c.opts.color {
+	case system:
+		hostnameColorIdx = rand.IntN(len(colors))
+	case program:
+		programColorIdx = rand.IntN(len(colors))
+	case all:
+		programColorIdx = rand.IntN(len(colors))
+		hostnameColorIdx = rand.IntN(len(colors))
+		for ; hostnameColorIdx == programColorIdx; {
+			hostnameColorIdx = rand.IntN(len(colors))
+		}
+	default:
+	}
+
+	for i := len(logs.Logs)-1; i >= 0; i-- {
+		l := logs.Logs[i]
+		hostname := l.Hostname
+		program := l.Program
+		if hostnameColorIdx != -1 {
+			hostname = colors[hostnameColorIdx](hostname)
+		}
+		if programColorIdx != -1 {
+			program = colors[programColorIdx](program)
 		}
 
-		fmt.Fprintf(c.output, "%s %s %s %s", t.String(), l.Hostname, l.Program, l.Message)
+		fmt.Fprintf(c.output, "%s %s %s %s\n", l.Time.Format("Jan 02 15:04:05"), hostname, program, l.Message)
 	}
 
 	return nil
@@ -147,6 +180,10 @@ func (c *Client) Run(ctx context.Context) error {
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		return fmt.Errorf("error while reading http response body from SWO: %w", err)
+	}
+
+	if len(content) == 0 {
+		return nil
 	}
 
 	var logs LogsData

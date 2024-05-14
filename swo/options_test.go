@@ -11,6 +11,11 @@ import (
 )
 
 func TestNewOptions(t *testing.T) {
+	location, err := time.LoadLocation("GMT")
+	require.NoError(t, err)
+
+	time.Local = location
+
 	fixedTime, err := time.Parse(time.DateTime, "2000-01-01 10:00:30")
 	require.NoError(t, err)
 
@@ -72,16 +77,11 @@ func TestNewOptions(t *testing.T) {
 				Token:      "123456",
 			},
 			action: func() {
-				f, err := os.Create(filepath.Join(os.TempDir(), "config-file.yaml"))
-				require.NoError(t, err, "creating a temporary file should not fail")
-
 				yamlStr := `
 token: 123456
 api-url: https://api.solarwinds.com
 `
-				n, err := f.Write([]byte(yamlStr))
-				require.Equal(t, n, len(yamlStr))
-				require.NoError(t, err)
+				createConfigFile(t, configFile, yamlStr)
 			},
 		},
 		{
@@ -95,15 +95,8 @@ api-url: https://api.solarwinds.com
 				Token:      "123456",
 			},
 			action: func() {
-				f, err := os.Create(filepath.Join(os.TempDir(), "config-file.yaml"))
-				require.NoError(t, err, "creating a temporary file should not fail")
-
-				yamlStr := `
-token: 123456
-`
-				n, err := f.Write([]byte(yamlStr))
-				require.Equal(t, n, len(yamlStr))
-				require.NoError(t, err)
+				yamlStr := "token: 123456"
+				createConfigFile(t, configFile, yamlStr)
 			},
 		},
 		{
@@ -122,7 +115,7 @@ token: 123456
 			},
 		},
 		{
-			name:  "parse min time",
+			name:  "parse human readable min time",
 			flags: []string{"--min-time", "5 seconds ago"},
 			expected: Options{
 				args:       []string{},
@@ -136,7 +129,7 @@ token: 123456
 			},
 		},
 		{
-			name:  "parse max time",
+			name:  "parse human readable max time",
 			flags: []string{"--max-time", "in 5 seconds"},
 			expected: Options{
 				args:       []string{},
@@ -167,6 +160,10 @@ token: 123456
 			}
 
 			opts, err := NewOptions(tc.flags)
+			require.True(t, errors.Is(err, tc.expectedError))
+			if tc.expectedError != nil {
+				return
+			}
 
 			// erase fs so we can compare structs
 			tc.expected.fs = nil
@@ -177,10 +174,56 @@ token: 123456
 			if opts != nil {
 				require.Equal(t, tc.expected, *opts)
 			}
-
-			require.True(t, errors.Is(err, tc.expectedError))
 		})
 
 		os.Setenv("SWOKEN", "")
+	}
+}
+
+func TestParseTime(t *testing.T) {
+	location, err := time.LoadLocation("GMT")
+	require.NoError(t, err)
+
+	time.Local = location
+
+	testCases := []struct{
+		name string
+		input string
+		expected string
+	}{
+		{
+			name: "RFC3339",
+			input: "2000-01-01T12:13:14Z",
+			expected: "2000-01-01T12:13:14Z",
+		},
+		{
+			name: "RFC822Z",
+			input: "04 Feb 00 13:14 MST",
+			expected: "2000-02-04T13:14:00Z",
+		},
+		{
+			name: "human readable",
+			input: "5 seconds ago",
+			expected: "2000-01-01T10:00:25Z",
+		},
+		{
+			name: "append UTC at the end",
+			input: "2024-05-13 13:00:00 UTC",
+			expected: "2024-05-13T13:00:00Z",
+		},
+	}
+
+	fixedTime, err := time.Parse(time.DateTime, "2000-01-01 10:00:30")
+	require.NoError(t, err)
+	
+	now = fixedTime
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := parseTime(tc.input)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expected, result)
+		})
 	}
 }
