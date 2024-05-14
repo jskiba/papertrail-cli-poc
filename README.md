@@ -62,8 +62,8 @@ Retrieve token from SolarWinds Observability page (`Settings` -> `API Tokens` ->
       swo-cli 1.2.3 Failure
       swo-cli -s ns1 "connection refused"
       swo-cli "(www OR db) (nginx OR pgsql) -accepted"
-      swo-cli -g Production --color all "(nginx OR pgsql) -accepted"
-      swo-cli --min-time 'yesterday at noon' --max-time 'today at 4am' -g Production
+      swo-cli -g <SWO_GROUP_ID> --color all "(nginx OR pgsql) -accepted"
+      swo-cli --min-time 'yesterday at noon' --max-time 'today at 4am' -g <SWO_GROUP_ID>
       swo-cli -- -redis
 
 
@@ -159,7 +159,7 @@ Because the Unix shell parses and strips one set of quotes around a
 phrase, to search for a phrase, wrap the string in both single-quotes
 and double-quotes. For example:
 
-    swo-cli -f '"Connection reset by peer"'
+    swo-cli '"Connection reset by peer"'
 
 Use one set of double-quotes and one set of single-quotes. The order
 does not matter as long as the pairs are consistent.
@@ -195,7 +195,7 @@ Alternatively, use shell aliases with different `-c` paths. For example:
 ### Install & Test
 
 1. Download repository: `$ git clone https://github.com/solarwinds/swo-cli.git`
-2. Check version in rubygems: `$ go build .`
+2. Build the binary: `$ go build .`
 3. Test: `$ ./swo-cli test search string`
 
 ### Release
