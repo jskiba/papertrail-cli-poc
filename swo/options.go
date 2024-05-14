@@ -67,7 +67,6 @@ type Options struct {
 	minTime    string
 	color      string
 	json       bool
-	forceColor bool
 	version    bool
 
 	ApiUrl string `yaml:"api-url"`
@@ -127,7 +126,10 @@ func NewOptions(args []string) (*Options, error) {
 	opts.fs.BoolVar(&opts.version, "V", false, "")
 	opts.fs.BoolVar(&opts.version, "version", false, "")
 
-	opts.fs.Parse(args)
+	err := opts.fs.Parse(args)
+	if err != nil {
+		return nil, err
+	}
 
 	opts.args = opts.fs.Args()
 

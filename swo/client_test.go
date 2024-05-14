@@ -210,7 +210,7 @@ api-url: %s
 
 	go func() {
 		<-outputComapreDone
-		server.Shutdown(context.Background())
+		_ = server.Shutdown(context.Background())
 	}()
 
 	err = client.Run(context.Background())
@@ -252,7 +252,8 @@ func TestPrintResultStandard(t *testing.T) {
 		require.Equal(t, expectStr, string(output))
 	}()
 
-	client.printResult(&logsData)
+	err = client.printResult(&logsData)
+	require.NoError(t, err)
 
 	err = w.Close()
 	require.NoError(t, err)
@@ -315,7 +316,8 @@ func TestPrintResultJSON(t *testing.T) {
 		require.Equal(t, trimmed, string(output[:len(output)-1])) // last char is a new line character
 	}()
 
-	client.printResult(&logsData)
+	err = client.printResult(&logsData)
+	require.NoError(t, err)
 
 	err = w.Close()
 	require.NoError(t, err)
