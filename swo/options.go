@@ -83,7 +83,7 @@ func NewOptions(args []string) (*Options, error) {
 		fmt.Printf("    %2s, %15s %70s\n", "-h", "--help", "Show usage")
 		fmt.Printf("    %2s  %15s %70s\n", "", "--min-time MIN", "Earliest time to search from")
 		fmt.Printf("    %2s  %15s %70s\n", "", "--max-time MAX", "Latest time to search from")
-		fmt.Printf("    %2s,  %15s %70s\n", "-c", "--configfile", "Path to config (~/.swo-cli.yaml)")
+		fmt.Printf("    %2s, %15s %70s\n", "-c", "--configfile", "Path to config (~/.swo-cli.yaml)")
 		fmt.Printf("    %2s, %15s %70s\n", "-g", "--group GROUP", "Group ID to search")
 		fmt.Printf("    %2s, %15s %70s\n", "-s", "--system SYSTEM", "System to search")
 		fmt.Printf("    %2s, %15s %70s\n", "-j", "--json", "Output raw JSON data (off)")
