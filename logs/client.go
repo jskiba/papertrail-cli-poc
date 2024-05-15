@@ -1,4 +1,4 @@
-package swo
+package logs
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
-	"math/rand/v2"
 	"os"
 	"strconv"
 	"strings"
@@ -36,10 +36,10 @@ type Client struct {
 
 type Log struct {
 	Time     time.Time `json:"time"`
-	Message  string `json:"message"`
-	Hostname string `json:"hostname"`
-	Severity string `json:"severity"`
-	Program  string `json:"program"`
+	Message  string    `json:"message"`
+	Hostname string    `json:"hostname"`
+	Severity string    `json:"severity"`
+	Program  string    `json:"program"`
 }
 
 type PageInfo struct {
@@ -132,13 +132,13 @@ func (c *Client) printResult(logs *LogsData) error {
 	case all:
 		programColorIdx = rand.IntN(len(colors))
 		hostnameColorIdx = rand.IntN(len(colors))
-		for ; hostnameColorIdx == programColorIdx; {
+		for hostnameColorIdx == programColorIdx {
 			hostnameColorIdx = rand.IntN(len(colors))
 		}
 	default:
 	}
 
-	for i := len(logs.Logs)-1; i >= 0; i-- {
+	for i := len(logs.Logs) - 1; i >= 0; i-- {
 		l := logs.Logs[i]
 		hostname := l.Hostname
 		program := l.Program

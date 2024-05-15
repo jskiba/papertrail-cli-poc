@@ -1,4 +1,4 @@
-package swo
+package logs
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -120,12 +120,11 @@ func TestPrepareRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			opts, err := NewOptions(tc.flags)
-			require.NoError(t, err)
-			client, err := NewClient(opts)
+			cmd := NewLogsCommand()
+			err := cmd.Init(tc.flags)
 			require.NoError(t, err)
 
-			request, err := client.prepareRequest(context.Background())
+			request, err := cmd.client.prepareRequest(context.Background())
 			require.NoError(t, err)
 
 			values := request.URL.Query()
@@ -186,12 +185,11 @@ api-url: %s
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	opts, err := NewOptions([]string{"--configfile", configFile, "--json"})
+	cmd := NewLogsCommand()
+	err = cmd.Init([]string{"--configfile", configFile, "--json"})
 	require.NoError(t, err)
 
-	client, err := NewClient(opts)
-	require.NoError(t, err)
-	client.output = w
+	cmd.client.output = w
 
 	outputComapreDone := make(chan struct{})
 
@@ -213,7 +211,7 @@ api-url: %s
 		_ = server.Shutdown(context.Background())
 	}()
 
-	err = client.Run(context.Background())
+	err = cmd.client.Run(context.Background())
 	require.NoError(t, err)
 
 	w.Close()
@@ -228,15 +226,13 @@ func TestPrintResultStandard(t *testing.T) {
 	time.Local = location
 
 	createConfigFile(t, configFile, "token: 1234567")
-	opts, err := NewOptions([]string{"--configfile", configFile})
-	require.NoError(t, err)
-
-	client, err := NewClient(opts)
+	cmd := NewLogsCommand()
+	err = cmd.Init([]string{"--configfile", configFile})
 	require.NoError(t, err)
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
-	client.output = w
+	cmd.client.output = w
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -248,11 +244,11 @@ func TestPrintResultStandard(t *testing.T) {
 
 		expectStr := fmt.Sprintf(`%s hostnameTwo programTwo messageTwo
 %s hostnameOne programOne messageOne
-`,		logsData.Logs[1].Time.Format("Jan 02 15:04:05"), logsData.Logs[0].Time.Format("Jan 02 15:04:05")) // SWO returns fresh logs as first in the logs list
+`, logsData.Logs[1].Time.Format("Jan 02 15:04:05"), logsData.Logs[0].Time.Format("Jan 02 15:04:05")) // SWO returns fresh logs as first in the logs list
 		require.Equal(t, expectStr, string(output))
 	}()
 
-	err = client.printResult(&logsData)
+	err = cmd.client.printResult(&logsData)
 	require.NoError(t, err)
 
 	err = w.Close()
@@ -268,15 +264,13 @@ func TestPrintResultJSON(t *testing.T) {
 	time.Local = location
 
 	createConfigFile(t, configFile, "token: 1234567")
-	opts, err := NewOptions([]string{"--configfile", configFile, "--json"})
-	require.NoError(t, err)
-
-	client, err := NewClient(opts)
+	cmd := NewLogsCommand()
+	err = cmd.Init([]string{"--configfile", configFile, "--json"})
 	require.NoError(t, err)
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
-	client.output = w
+	cmd.client.output = w
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -316,7 +310,7 @@ func TestPrintResultJSON(t *testing.T) {
 		require.Equal(t, trimmed, string(output[:len(output)-1])) // last char is a new line character
 	}()
 
-	err = client.printResult(&logsData)
+	err = cmd.client.printResult(&logsData)
 	require.NoError(t, err)
 
 	err = w.Close()
@@ -327,15 +321,14 @@ func TestPrintResultJSON(t *testing.T) {
 
 func TestRunVersion(t *testing.T) {
 	createConfigFile(t, configFile, "token: 1234567")
-	opts, err := NewOptions([]string{"--configfile", configFile, "--version"})
-	require.NoError(t, err)
 
-	client, err := NewClient(opts)
+	cmd := NewLogsCommand()
+	err := cmd.Init([]string{"--configfile", configFile, "--version"})
 	require.NoError(t, err)
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
-	client.output = w
+	cmd.client.output = w
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -347,7 +340,7 @@ func TestRunVersion(t *testing.T) {
 		require.Equal(t, version.Version+"\n", string(output))
 	}()
 
-	err = client.Run(context.Background())
+	err = cmd.client.Run(context.Background())
 	require.NoError(t, err)
 
 	w.Close()

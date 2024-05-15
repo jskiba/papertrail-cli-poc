@@ -1,4 +1,4 @@
-package swo
+package logs
 
 import (
 	"errors"
@@ -191,21 +191,14 @@ api-url: https://api.solarwinds.com
 				tc.action()
 			}
 
-			opts, err := NewOptions(tc.flags)
-			require.True(t, errors.Is(err, tc.expectedError), err)
+			cmd := NewLogsCommand()
+			err := cmd.Init(tc.flags)
+			require.True(t, errors.Is(err, tc.expectedError), "error: %v, expected: %v", err, tc.expectedError)
 			if tc.expectedError != nil {
 				return
 			}
 
-			// erase fs so we can compare structs
-			tc.expected.fs = nil
-			if opts != nil {
-				opts.fs = nil
-			}
-
-			if opts != nil {
-				require.Equal(t, tc.expected, *opts)
-			}
+			require.Equal(t, &tc.expected, cmd.opts)
 		})
 
 		os.Setenv("SWOKEN", "")
@@ -218,36 +211,36 @@ func TestParseTime(t *testing.T) {
 
 	time.Local = location
 
-	testCases := []struct{
-		name string
-		input string
+	testCases := []struct {
+		name     string
+		input    string
 		expected string
 	}{
 		{
-			name: "RFC3339",
-			input: "2000-01-01T12:13:14Z",
+			name:     "RFC3339",
+			input:    "2000-01-01T12:13:14Z",
 			expected: "2000-01-01T12:13:14Z",
 		},
 		{
-			name: "RFC822Z",
-			input: "04 Feb 00 13:14 MST",
+			name:     "RFC822Z",
+			input:    "04 Feb 00 13:14 MST",
 			expected: "2000-02-04T13:14:00Z",
 		},
 		{
-			name: "human readable",
-			input: "5 seconds ago",
+			name:     "human readable",
+			input:    "5 seconds ago",
 			expected: "2000-01-01T10:00:25Z",
 		},
 		{
-			name: "append UTC at the end",
-			input: "2024-05-13 13:00:00 UTC",
+			name:     "append UTC at the end",
+			input:    "2024-05-13 13:00:00 UTC",
 			expected: "2024-05-13T13:00:00Z",
 		},
 	}
 
 	fixedTime, err := time.Parse(time.DateTime, "2000-01-01 10:00:30")
 	require.NoError(t, err)
-	
+
 	now = fixedTime
 
 	for _, tc := range testCases {
